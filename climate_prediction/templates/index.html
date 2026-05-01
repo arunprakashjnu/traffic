@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Temperature Predictor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            margin: 0; 
+            padding: 0;
+            background: url('https://images.unsplash.com/photo-1611273426858-450d8e814323?q=80&w=2000&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2c3e50;
+        }
+        
+        .main-card {
+            background: rgba(255, 255, 255, 0.85); /* Semi-transparent white */
+            backdrop-filter: blur(12px); /* Glassmorphism blur */
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 1200px;
+            margin: 40px 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #d35400;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.1em;
+            color: #34495e;
+            margin-bottom: 30px;
+        }
+
+        .container { 
+            display: flex; 
+            gap: 30px; 
+            margin-top: 20px; 
+            flex-wrap: wrap;
+        }
+
+        .controls { 
+            flex: 1;
+            min-width: 250px;
+            max-width: 320px;
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            background: rgba(255, 255, 255, 0.6);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .chart-container { 
+            flex: 3; 
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        select { 
+            height: 380px; 
+            padding: 8px; 
+            font-size: 15px; 
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            outline: none;
+            font-family: inherit;
+            background-color: rgba(255,255,255,0.8);
+        }
+
+        select:focus {
+            border-color: #3498db;
+        }
+
+        button { 
+            padding: 15px; 
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(211, 84, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover { 
+            background: linear-gradient(135deg, #d35400, #e67e22);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(211, 84, 0, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .help-text { 
+            font-size: 13px; 
+            color: #7f8c8d; 
+            margin-top: -10px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .controls {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-card">
+    <h1>🌍 Global Surface Temperature Trends</h1>
+    <p class="subtitle">Historical data (1961 - 2024) & AI Linear Predictions up to 2035<br>
+    <em>Measured as temperature changes with respect to the 1951-1980 baseline.</em></p>
+
+    <div class="container">
+        <div class="controls">
+            <label for="country-select">Select Countries</label>
+            <span class="help-text">(Hold Ctrl/Cmd + Click for multiple)</span>
+            <select id="country-select" multiple>
+                <!-- Populated by JS -->
+            </select>
+            <button onclick="compareCountries()">Compare & Predict</button>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="temperatureChart"></canvas>
+        </div>
+    </div>
+</div>
+
+    <script>
+        let myChart = null;
+
+        // Fetch countries on load
+        fetch('/api/countries')
+            .then(res => res.json())
+            .then(countries => {
+                const select = document.getElementById('country-select');
+                countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country;
+                    option.textContent = country;
+                    select.appendChild(option);
+                });
+            });
+
+        function getRandomColor(index) {
+            const colors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', 
+                '#8AC926', '#1982C4', '#6A4C93', '#F15BB5', '#00BBF9', '#00F5D4'
+            ];
+            return colors[index % colors.length];
+        }
+
+        function compareCountries() {
+            const select = document.getElementById('country-select');
+            const selectedOptions = Array.from(select.selectedOptions);
+            const countries = selectedOptions.map(opt => opt.value);
+
+            if (countries.length === 0) {
+                alert("Please select at least one country.");
+                return;
+            }
+
+            fetch('/api/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ countries: countries })
+            })
+            .then(res => res.json())
+            .then(data => {
+                renderChart(data.years, data.results);
+            });
+        }
+
+        function renderChart(allYears, results) {
+            const ctx = document.getElementById('temperatureChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            const datasets = [];
+            let colorIndex = 0;
+
+            for (const [country, data] of Object.entries(results)) {
+                const color = getRandomColor(colorIndex++);
+                
+                // Map historical data
+                const historicalData = allYears.map(year => data.historical[year] !== undefined ? data.historical[year] : null);
+                // Map future data
+                const futureData = allYears.map(year => data.future[year] !== undefined ? data.future[year] : null);
+                
+                // Connect the last historical point to the first prediction point for a continuous line
+                const historicYears = Object.keys(data.historical).map(Number).sort((a,b) => a-b);
+                const lastHistYear = historicYears[historicYears.length - 1];
+                if (lastHistYear && data.future[lastHistYear + 1]) {
+                     futureData[allYears.indexOf(lastHistYear.toString())] = data.historical[lastHistYear.toString()];
+                }
+
+                datasets.push({
+                    label: `${country} (Historical)`,
+                    data: historicalData,
+                    borderColor: color,
+                    backgroundColor: color,
+                    fill: false,
+                    tension: 0.2, // Small curve
+                    pointRadius: 2
+                });
+
+                datasets.push({
+                    label: `${country} (Predicted)`,
+                    data: futureData,
+                    borderColor: color,
+                    backgroundColor: color,
+                    borderDash: [5, 5], // Dashed line for predictions
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 0
+                });
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allYears,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(3) + ' °C';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            display: true, 
+                            title: { display: true, text: 'Year' } 
+                        },
+                        y: { 
+                            display: true, 
+                            title: { display: true, text: 'Temperature Change (°C)' } 
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
