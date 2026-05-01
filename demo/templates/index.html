@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Price Predictor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .results-section {
+            background: #f0f4ff;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 4px solid #764ba2;
+        }
+
+        .result-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-value {
+            color: #667eea;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .error {
+            background: #ffe7e7;
+            border-left: 4px solid #f44336;
+            color: #d32f2f;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 House Price Predictor</h1>
+        <p class="subtitle">Using Machine Learning Regression</p>
+
+        <div class="error" id="error"></div>
+
+        <div class="content">
+            <div class="input-section">
+                <h2 style="color: #333; margin-bottom: 20px; font-size: 18px;">Enter Square Footage</h2>
+                
+                <div class="input-group">
+                    <label for="sqft">Square Feet:</label>
+                    <input type="number" id="sqft" placeholder="e.g., 2500" min="500" max="10000" value="2500">
+                </div>
+
+                <button onclick="predict()">🔮 Predict Price</button>
+
+                <div class="info-box">
+                    <strong>💡 Tip:</strong> Enter the square footage of a house to predict its price based on our trained model.
+                </div>
+
+                <div class="loading" id="loading">
+                    ⏳ Predicting...
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h2 style="color: #333; margin-bottom: 20px; font-size: 18px;">Prediction Results</h2>
+                
+                <div class="result-box">
+                    <div class="result-label">Predicted Price</div>
+                    <div class="result-value" id="prediction">-</div>
+                </div>
+
+                <div class="result-box">
+                    <div class="result-label">Model Accuracy (R²)</div>
+                    <div class="result-value" id="accuracy" style="color: #764ba2; font-size: 20px;">-</div>
+                </div>
+
+                <div class="result-box">
+                    <div class="result-label">Regression Equation</div>
+                    <div style="color: #333; font-size: 14px; margin-top: 8px; font-family: monospace;" id="equation">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3>📊 Regression Analysis</h3>
+            <canvas id="regressionChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+
+        // Load data and create chart on page load
+        window.onload = function() {
+            loadChart();
+        };
+
+        function loadChart() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('regressionChart').getContext('2d');
+                    
+                    // Calculate regression line points
+                    const minX = Math.min(...data.sqft);
+                    const maxX = Math.max(...data.sqft);
+                    const y1 = data.slope * minX + data.intercept;
+                    const y2 = data.slope * maxX + data.intercept;
+
+                    if (chart) {
+                        chart.destroy();
+                    }
+
+                    chart = new Chart(ctx, {
+                        type: 'scatter',
+                        data: {
+                            datasets: [
+                                {
+                                    label: 'Training Data',
+                                    data: data.sqft.map((x, i) => ({x: x, y: data.price[i]})),
+                                    backgroundColor: '#667eea',
+                                    borderColor: '#667eea',
+                                    pointRadius: 6,
+                                    pointHoverRadius: 8
+                                },
+                                {
+                                    label: 'Regression Line',
+                                    data: [
+                                        {x: minX, y: y1},
+                                        {x: maxX, y: y2}
+                                    ],
+                                    type: 'line',
+                                    borderColor: '#764ba2',
+                                    borderWidth: 2,
+                                    fill: false,
+                                    pointRadius: 0,
+                                    tension: 0
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Square Footage'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: 'Price ($)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+
+        function predict() {
+            const sqft = document.getElementById('sqft').value;
+
+            if (!sqft || sqft < 500 || sqft > 10000) {
+                showError('Please enter a valid square footage between 500 and 10000');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({sqft: sqft})
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('prediction').textContent = data.predicted_price;
+                document.getElementById('accuracy').textContent = data.r2;
+                document.getElementById('equation').textContent = data.equation;
+                document.getElementById('loading').style.display = 'none';
+            })
+            .catch(error => {
+                showError('Error making prediction: ' + error);
+                document.getElementById('loading').style.display = 'none';
+            });
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('error');
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+        }
+
+        // Allow Enter key to predict
+        document.getElementById('sqft').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                predict();
+            }
+        });
+    </script>
+</body>
+</html>
