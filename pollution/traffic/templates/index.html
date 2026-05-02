@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Traffic Data Filter</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .data { border-collapse: collapse; width: 100%; }
+        .data th, .data td { border: 1px solid #ddd; padding: 8px; }
+        .data th { background-color: #f2f2f2; }
+        select, button { padding: 6px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h2>Traffic Data Filter</h2>
+    <form method="get" style="margin-bottom: 20px;">
+        <label for="congestion">Congestion Level:</label>
+        <select name="congestion" id="congestion">
+            <option value="">All</option>
+            {% for level in congestion_levels %}
+                <option value="{{ level }}" {% if selected == level %}selected{% endif %}>{{ level }}</option>
+            {% endfor %}
+        </select>
+        &nbsp;&nbsp;
+        <label for="min_count">Min Vehicle Count:</label>
+        <input type="number" name="min_count" id="min_count" value="{{ min_count }}" style="width: 80px;">
+        <label for="max_count">Max Vehicle Count:</label>
+        <input type="number" name="max_count" id="max_count" value="{{ max_count }}" style="width: 80px;">
+        &nbsp;&nbsp;
+        <label for="min_speed">Min Speed:</label>
+        <input type="number" step="any" name="min_speed" id="min_speed" value="{{ min_speed }}" style="width: 80px;">
+        <label for="max_speed">Max Speed:</label>
+        <input type="number" step="any" name="max_speed" id="max_speed" value="{{ max_speed }}" style="width: 80px;">
+        &nbsp;&nbsp;
+        <label for="vehicle_type">Vehicle Type Contains:</label>
+        <input type="text" name="vehicle_type" id="vehicle_type" value="{{ vehicle_type }}" style="width: 120px;">
+        &nbsp;&nbsp;
+        <button type="submit">Filter</button>
+    </form>
+    <div>
+        {{ table|safe }}
+    </div>
+</body>
+</html>
