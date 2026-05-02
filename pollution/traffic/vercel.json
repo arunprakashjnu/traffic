@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "traffic_webapp.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "traffic_webapp.py" }
+  ]
+}
