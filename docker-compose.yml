@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: ./traffic_api
+    volumes:
+      - ./pollution/traffic/traffic_dataset.csv:/app/traffic_dataset.csv
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --reload
+    working_dir: /app
+  frontend:
+    build:
+      context: ./traffic_ui
+    ports:
+      - "3000:3000"
+    working_dir: /app
+    command: npm start
